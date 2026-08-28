@@ -26,6 +26,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# Switches next.config.ts to output: "standalone". Off everywhere else, so
+# Vercel and local builds are unaffected.
+ENV DOCKER_BUILD=1
 RUN pnpm build
 
 # -------------------------------------------------------------------- runtime

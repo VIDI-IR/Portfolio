@@ -1,26 +1,323 @@
 @import "tailwindcss";
 
+/*
+ * Earth-tone palette. Light = sand and clay; dark = dark chocolate and oak.
+ * Contrast against each theme's own background (WCAG 2.1, measured):
+ *   light  fg 11.92:1 AAA · muted 5.37:1 AA · accent 5.17:1 AA
+ *   dark   fg 12.98:1 AAA · muted 5.48:1 AA · accent 7.57:1 AAA
+ * Neither background is pure white or pure black, which avoids the halation
+ * (glow around text) that high-contrast extremes cause for astigmatic readers.
+ *
+ * Structure is carried by borders, and their visibility is a perceptual
+ * question, not a contrast-ratio one: ratio is not perceptually uniform, so
+ * CIE L* is the right measure. Border sits ΔL* 13.5 from the background in
+ * light and 7.9 in dark, where ~1 is the just-noticeable threshold.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Tells the browser to paint native UI — scrollbars, form controls, the
+     overscroll gutter — in this mode. Safari ignores scrollbar-color, so this
+     is what gets it a correctly themed scrollbar. */
+  color-scheme: light;
+  /*
+   * Ground sits at L* 91.1, not the 94.9 it started at. Near-white leaves no
+   * headroom: at 94.9 even pure white was only ΔL* 5.1 away, so nothing could
+   * read as raised and hairline borders disappeared into the page.
+   */
+  --background: #ece5d5; /* sand */
+  --foreground: #302519; /* dark umber */
+  --muted: #68594a; /* raw umber */
+  --accent: #8f4c2c; /* burnt sienna */
+  --border: #cfbe9c; /* clay */
+  --glow: rgba(240, 216, 178, 0.7);
+  --grain-opacity: 0.05;
+  /* Literal rgba, not color-mix(): the build emits `var(--foreground)` as the
+     pre-color-mix fallback, which would paint the grid at FULL opacity on
+     older browsers. Same value as foreground at 6%. */
+  --grid-line: rgba(48, 37, 25, 0.06);
+}
+
+/*
+ * Dark = dark chocolate. Chroma, not darkness, is what separates rich wood from
+ * dead dirt: this is saturation 0.58 / value 0.19, where the earlier "soil" was
+ * 0.43 / 0.16 — barely darker, but far greyer, which is why it read as dirt.
+ * Alternatives in the same family — swap --background alone, all still pass:
+ *   espresso #2b1d13 (.56/.17, deeper) · mahogany #33211a (.49/.20, redder)
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #301f14; /* dark chocolate */
+  --foreground: #f1e8d9; /* bone */
+  --muted: #ab9578; /* weathered wood */
+  --accent: #dcab6b; /* ochre */
+  --border: #42301f; /* oak grain */
+  --glow: rgba(220, 171, 107, 0.08);
+  --grain-opacity: 0.08;
+  /* Light lines on a dark ground read fainter, so this runs slightly higher.
+     Literal rgba for the same reason as the light value above. */
+  --grid-line: rgba(241, 232, 217, 0.07);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html {
+  /*
+   * Blueprint grid. A category signal: engineering drawings and CAD are where
+   * this reads from, and prototypicality research shows users judge a site
+   * partly on whether it looks like its category. Two gradients, no assets.
+   *
+   * Deliberately near-invisible — the same research finds LOW visual
+   * complexity drives appeal, so this has to register as texture rather than
+   * pattern. It scrolls with the page (unlike the fixed glow and grain), which
+   * is what makes it read as paper rather than an overlay.
+   */
+  background-color: var(--background);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  /*
+   * The header is sticky (60px). Without this, anchor jumps and keyboard focus
+   * land *behind* it — a WCAG 2.2 2.4.11 "Focus Not Obscured" (AA) failure.
+   * scroll-padding on the scroll container fixes both cases at once.
+   */
+  scroll-padding-top: 5rem;
+
+  /*
+   * Standard scrollbar styling (Firefox, Chrome 121+). Thumb/track resolve per
+   * theme from the tokens above: 3.69:1 in light, 4.36:1 in dark — a scrollbar
+   * is a UI control, so it owes WCAG 1.4.11's 3:1 non-text contrast. Every
+   * softer pairing I measured came in under that and was rejected.
+   *
+   * Width is deliberately left at the browser default rather than `thin`:
+   * narrowing it shrinks the drag target, which Fitts's Law says makes it
+   * measurably slower and more error-prone to grab.
+   */
+  scrollbar-color: var(--muted) var(--border);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Soft warm glow, centered behind the hero avatar. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 55% at 50% 30%,
+    var(--glow),
+    transparent 70%
+  );
+}
+
+/* Fine paper grain across the whole page. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Theme toggle icon. Both icons are in the DOM and the attribute picks one,
+ * so the correct icon paints on the first frame instead of after hydration.
+ */
+.theme-icon-sun {
+  display: none;
+}
+
+[data-theme="dark"] .theme-icon-sun {
+  display: block;
+}
+
+[data-theme="dark"] .theme-icon-moon {
+  display: none;
+}
+
+/*
+ * Hero entrance: one gesture (fade + rise), staggered down the page.
+ * Transform/opacity only so it stays off the layout path.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
+
+/*
+ * Scroll-driven animation (the Apple-style effect).
+ *
+ * Progress is bound to each element's own visibility in the scrollport via
+ * `animation-timeline: view()`, so the page still scrolls at the browser's
+ * native speed and the scrollbar still means what it says. That is the
+ * important distinction from scroll-JACKING, which overrides scroll position
+ * and which NN/g found leaves most users disoriented, breaks keyboard and
+ * screen-reader navigation, and triggers vestibular symptoms.
+ *
+ * Two guards, both load-bearing:
+ *   @supports          — the feature is ~83% global, not Baseline (Firefox
+ *                        stable still has it behind a flag), so unsupported
+ *                        browsers must simply get the content, fully visible.
+ *                        Nothing here sets opacity:0 outside this block.
+ *   prefers-reduced-motion — mandatory given the vestibular research above.
+ *
+ * These run on the compositor rather than a JS scroll listener, so they cost
+ * no main-thread time, and they animate transform/opacity only — never
+ * width/height/top/left, which would force layout on every frame.
+ */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Header chrome only when it is actually stuck.
+ *
+ * At the top of the page the bar sits on the hero with nothing behind it, so
+ * a background and border would just be a line across the design. Once it
+ * sticks, it needs both to separate itself from content passing underneath.
+ *
+ * scroll-state(stuck) is Chromium-only (~50% global, not Baseline), hence the
+ * @supports. Everywhere else the bar simply keeps its translucent background
+ * at all times, which is the behaviour it had before — no regression.
+ */
+.header-bar {
+  background: color-mix(in srgb, var(--background) 82%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+@supports (container-type: scroll-state) {
+  .site-header {
+    container-type: scroll-state;
+  }
+
+  .header-bar {
+    background: transparent;
+    backdrop-filter: none;
+    border-bottom: 1px solid transparent;
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  @container scroll-state(stuck: top) {
+    .header-bar {
+      background: color-mix(in srgb, var(--background) 82%, transparent);
+      backdrop-filter: blur(8px);
+      border-bottom-color: var(--border);
+    }
+  }
+}
+
+/*
+ * Animated disclosure. `::details-content` + interpolate-size is what makes
+ * height:auto animatable at all; both are recent, so this is guarded and
+ * degrades to an instant open — which is the native behaviour anyway.
+ */
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    :root {
+      interpolate-size: allow-keywords;
+    }
+
+    .disclosure::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size 280ms cubic-bezier(0.22, 1, 0.36, 1),
+        content-visibility 280ms allow-discrete;
+    }
+
+    .disclosure[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
+/* Hero recedes as it leaves — Apple's "previous panel falls back" move. */
+@keyframes recede {
+  to {
+    opacity: 0;
+    transform: scale(0.94) translateY(-6%);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Fades and lifts as the element enters the viewport. */
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 30%;
+    }
+
+    /*
+     * Hero fades and scales back on the way out. `exit` range means this only
+     * runs as the element leaves the scrollport, so it never touches the
+     * first paint.
+     */
+    .hero-exit {
+      animation: recede linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 85%;
+      transform-origin: center 30%;
+    }
+
+    /* Reading-progress rule, driven by document scroll. */
+    .scroll-progress {
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
 }

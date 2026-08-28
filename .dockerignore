@@ -1,0 +1,35 @@
+# Everything here is either rebuilt inside the image, irrelevant to it, or
+# should never be shipped. Keeping this tight also keeps the build context
+# small — `design/` alone is ~34MB that would otherwise be uploaded to the
+# daemon on every build.
+
+node_modules
+.next
+.git
+.gitignore
+
+# Image masters. The build only needs public/, which holds the derived image.
+design
+
+# Agent tooling and local editor state
+.claude
+.vscode
+.idea
+
+# Docs and config that do not affect the build
+README.md
+AGENTS.md
+CLAUDE.md
+Dockerfile
+.dockerignore
+compose.yaml
+
+# Env files — never bake secrets into an image layer
+.env
+.env.*
+
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+next-env.d.ts

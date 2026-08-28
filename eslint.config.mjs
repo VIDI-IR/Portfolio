@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored agent tooling, not application code — linting it produced 16
+    // errors from scripts this project neither ships nor maintains.
+    ".claude/**",
+    // Image masters, kept out of public/ so they are never served or deployed.
+    "design/**",
   ]),
 ]);
 

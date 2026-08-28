@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.claude
+
+# Image masters (~34MB). Kept out of public/ so they are never served or
+# deployed, and out of git so the repo does not carry them forever.
+# NOTE: these are NOT backed up by git — keep your own copy.
+/design

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { SiteHeader } from "@/components/site-header";
 import { CopyEmail } from "@/components/copy-email";
+import { ICONS, LABEL_MARKS } from "@/app/brand-marks";
 import { focusRing, focusRingFlush } from "@/app/ui";
 
 /*
@@ -227,7 +227,64 @@ const eyebrow =
   "font-mono text-xs font-medium uppercase tracking-[0.2em] text-accent";
 const heading = "mt-3 text-3xl font-semibold tracking-tight";
 const chip =
-  "rounded-full border border-border px-3 py-1 font-mono text-xs text-muted";
+  "inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 font-mono text-xs text-muted";
+
+/*
+ * Brand marks are defined once as <symbol>s and referenced with <use>, not
+ * inlined per chip. React alone is a 2.8 KB path and appears three times on
+ * the page; repeating the geometry would cost more than every other mark
+ * combined. Each reference is about forty bytes instead.
+ *
+ * Only marks actually on the page are emitted, so deleting a skill drops its
+ * geometry from the HTML with no second edit.
+ */
+const USED_MARKS = [
+  ...new Set(
+    [...SKILLS.flatMap((g) => g.items), ...PROJECTS.flatMap((p) => p.stack)]
+      .map((label) => LABEL_MARKS[label])
+      .filter((slug) => slug && slug in ICONS),
+  ),
+];
+
+function BrandSprite() {
+  return (
+    /* Absolute and zero-sized rather than display:none, which some engines
+       treat as a reason not to resolve the references into it. */
+    <svg aria-hidden className="absolute h-0 w-0 overflow-hidden">
+      {USED_MARKS.map((slug) => (
+        <symbol key={slug} id={`bm-${slug}`} viewBox="0 0 24 24">
+          <path d={ICONS[slug].path} />
+        </symbol>
+      ))}
+    </svg>
+  );
+}
+
+/*
+ * The mark is decorative and hidden from assistive tech: the label sits beside
+ * it, and NN/g's finding is icons help scanning when they accompany a label
+ * and hurt comprehension when they replace one. Drawn in accent, which clears
+ * WCAG 1.4.11's 3:1 non-text minimum at 5.17:1 in light and 7.57:1 in dark.
+ */
+function Chip({ label }: { label: string }) {
+  const slug = LABEL_MARKS[label];
+
+  return (
+    <li className={chip}>
+      {slug && slug in ICONS && (
+        <svg
+          aria-hidden
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="h-3.5 w-3.5 shrink-0 text-accent"
+        >
+          <use href={`#bm-${slug}`} />
+        </svg>
+      )}
+      {label}
+    </li>
+  );
+}
 
 /* One container for every section, so headings and rules share a left and
    right edge down the whole page. It matches the hero's max-w-5xl, which is
@@ -239,6 +296,10 @@ const section = "mx-auto w-full max-w-5xl px-6 py-24";
    full 5xl width a line would run past 110. Applied to running prose only,
    never to headings, chips or metadata. */
 const measure = "max-w-[70ch] text-pretty text-base leading-relaxed text-muted";
+
+/* Lead paragraph under a section heading. One offset everywhere, so two
+   sections carrying a deck open on the same rhythm. */
+const deck = "mt-5 text-pretty text-base leading-relaxed text-muted";
 
 const extLink = `inline-flex items-center gap-1 rounded-sm underline decoration-border underline-offset-4 transition-colors hover:text-accent hover:decoration-accent ${focusRing}`;
 
@@ -284,6 +345,8 @@ export default function Home() {
       <SiteHeader />
 
       <main id="main">
+        <BrandSprite />
+
         {/* ---------------------------------------------------------- Hero */}
         <section className="relative flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-16">
           <div className="hero-exit grid w-full max-w-5xl items-center gap-10 md:grid-cols-[minmax(0,0.85fr)_1fr] md:gap-16">
@@ -303,13 +366,33 @@ export default function Home() {
                   "linear-gradient(to bottom, black 78%, transparent 100%)",
               }}
             >
-              <Image
-                src="/profile-web.webp"
+              {/*
+                A plain <img>, not next/image, and deliberately so. The photo
+                is pre-graded, so it was already passing `unoptimized`, which
+                meant next/image contributed nothing but a width and height
+                attribute. What it also blocked was a hand-written srcset, and
+                a srcset is the only way to hold full resolution without
+                charging every visitor for it.
+
+                Four exports of the same 4000x6000 master. The browser takes
+                the smallest file that still covers its device pixels: a 1x
+                laptop pulls 122 KB, a 2x laptop 168 KB, a 3x phone 274 KB.
+                The full 529 KB frame is there for anything beyond that.
+
+                `sizes` is the layout width of this element, which is 166.67%
+                of its panel because the panel crops it. Values derive from the
+                grid above: 0.85fr against 1fr, minus the 64px gap.
+              */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/profile-2400.webp"
+                srcSet="/profile-1200.webp 1200w, /profile-1600.webp 1600w, /profile-2400.webp 2400w, /profile-4000.webp 4000w"
+                sizes="(min-width: 1072px) 735px, (min-width: 768px) calc((100vw - 112px) * 0.766), calc((100vw - 48px) * 1.667)"
                 alt="Vidi Ilham Ramadhan"
                 width={SRC_W}
                 height={SRC_H}
-                unoptimized
-                priority
+                fetchPriority="high"
+                decoding="async"
                 className="absolute max-w-none"
                 style={{
                   width: `${(SRC_W / CROP.w) * 100}%`,
@@ -428,7 +511,7 @@ export default function Home() {
             <h2 id="work-heading" className={heading}>
               Things I&apos;ve built
             </h2>
-            <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
+            <p className={`${deck} max-w-[52ch]`}>
               Systems shipped at Kalbe International, from AI agent backends to
               enterprise financial tooling. Open any row for the detail.
             </p>
@@ -443,7 +526,7 @@ export default function Home() {
             managers actually read a portfolio — while the detail stays one
             keystroke away instead of dumped on the page.
           */}
-          <ol className="mt-12 border-t border-border">
+          <ol className="mt-10 border-t border-border">
             {PROJECTS.map((p, i) => (
               <li key={p.name} className="reveal border-b border-border">
                 <details className="disclosure group">
@@ -451,7 +534,17 @@ export default function Home() {
                       the control at its end. Negative margin lets it bleed
                       past the text without moving any of it. */}
                   <summary className="-mx-3 flex cursor-pointer list-none items-start gap-4 rounded-lg px-3 py-6 transition-colors hover:bg-accent/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background group-open:bg-accent/6 [&::-webkit-details-marker]:hidden">
-                    <span className="mt-1 font-mono text-xs text-muted tabular-nums">
+                    {/*
+                      Fixed width, not intrinsic. w-6 plus the row's gap-4 puts
+                      the title at exactly 40px, which is the pl-10 the open
+                      panel below uses, so detail lines up under the name
+                      instead of near it.
+
+                      mt-1.5 centres this 16px line box on the 28px line box of
+                      the title beside it. The year uses the same offset for
+                      the same reason.
+                    */}
+                    <span className="mt-1.5 w-6 shrink-0 font-mono text-xs text-muted tabular-nums">
                       {String(i + 1).padStart(2, "0")}
                     </span>
 
@@ -480,7 +573,10 @@ export default function Home() {
                     */}
                     <span
                       aria-hidden
-                      className="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-full border border-accent/45 bg-accent/10 px-3 py-1.5 font-mono text-xs font-medium text-accent transition-colors group-hover:border-accent group-hover:bg-accent/20"
+                      /* No top offset: the pill is 28px tall, the same as the
+                         title's line box, so it centres on the title already.
+                         The 0.5 it carried before pushed it 2px low. */
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-accent/45 bg-accent/10 px-3 py-1.5 font-mono text-xs font-medium text-accent transition-colors group-hover:border-accent group-hover:bg-accent/20"
                     >
                       <svg
                         viewBox="0 0 24 24"
@@ -512,9 +608,7 @@ export default function Home() {
 
                     <ul className="mt-5 flex flex-wrap gap-2">
                       {p.stack.map((s) => (
-                        <li key={s} className={chip}>
-                          {s}
-                        </li>
+                        <Chip key={s} label={s} />
                       ))}
                     </ul>
 
@@ -561,9 +655,7 @@ export default function Home() {
                 <dd>
                   <ul className="mt-3 flex flex-wrap gap-2">
                     {s.items.map((i) => (
-                      <li key={i} className={chip}>
-                        {i}
-                      </li>
+                      <Chip key={i} label={i} />
                     ))}
                   </ul>
                 </dd>
@@ -623,13 +715,13 @@ export default function Home() {
               block from stretching across the full width. */}
           <div className="mx-auto max-w-2xl text-center">
             <p className={`reveal ${eyebrow}`}>Contact</p>
-            <h2
-              id="contact-heading"
-              className="reveal mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
-            >
+            {/* Same size as every other h2. It was text-3xl growing to 4xl,
+                which made the closer the one section header out of step with
+                the rest of the page. */}
+            <h2 id="contact-heading" className={`reveal ${heading} text-balance`}>
               Let&apos;s build something
             </h2>
-            <p className="reveal mt-5 text-pretty text-base leading-relaxed text-muted">
+            <p className={`reveal ${deck}`}>
               Open to onsite, hybrid and fully remote roles. Based in Jakarta
               (Jabodetabek).
             </p>

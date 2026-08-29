@@ -52,7 +52,9 @@ export function CopyEmail({ email = EMAIL }: { email?: string }) {
          it. This keeps the name fixed and lets the live region below carry
          the result instead. */
       aria-label={`Copy email address ${email}`}
-      className={`copy-email group flex h-11 items-center gap-2 rounded-full border border-border px-5 font-mono text-sm text-muted transition-colors hover:border-accent hover:text-accent ${focusRing}`}
+      /* h-11 and px-6 match the two buttons directly above this one, so all
+         three pills in the contact block are the same shape. */
+      className={`copy-email group flex h-11 items-center gap-2 rounded-full border border-border px-6 font-mono text-sm text-muted transition-colors hover:border-accent hover:text-accent ${focusRing}`}
     >
       <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
         <svg

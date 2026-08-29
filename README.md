@@ -59,8 +59,9 @@ the markup loops over them and needs no changes.
 
 ## The hero photo
 
-`public/profile-web.webp` is generated from the master in `design/`. The crop is
-done in CSS, not baked into the file, so it can be retuned without re-exporting:
+`public/profile-{1200,1600,2400,4000}.webp` are generated from
+`design/profile-master.png`. The crop is done in CSS, not baked into the file,
+so it can be retuned without re-exporting:
 
 ```ts
 const CROP = { x: 800, y: 295, w: 2400, h: 3000 }; // source px of the 4000x6000 frame
@@ -71,15 +72,48 @@ comment above them (pupils sit at y≈1295, which is what puts the eyes on the
 upper rule-of-thirds line). The container derives its aspect ratio from `w/h`,
 so the frame can never disagree with the crop.
 
-To regenerate the served image after replacing the master:
+`design/` is gitignored, so the masters live only on the machine that made
+them. Keep a copy. The files there are:
 
-```bash
-python -c "from PIL import Image; Image.open('design/profile.png').resize((1600,2400), Image.LANCZOS).save('public/profile-web.webp','WEBP',quality=80,method=6)"
-```
+| file | what it is |
+| --- | --- |
+| `IMG_5784.jpg` | untouched 4000x6000 camera frame, the only real detail there is |
+| `profile-enhanced.png` | the colour grade to match, 1023x1537 |
+| `profile.png`, `profile-arsip.png` | older grades, kept for reference, not used |
+| `profile-master.png` | grade plus detail, what the site ships from |
+| `regrade.py` | rebuilds `profile-master.png` and re-exports the four webp files |
 
-Keep it around 1600x2400. The crop uses 60% of the width and 40% of the height,
-so that yields ~960x1200 real pixels behind a ~440px display — about 2.2x, which
-holds up on 2x screens without shipping a heavy file.
+Run `python design/regrade.py` after changing either input.
+
+Every graded version of this photo has been a small image scaled up. Laplacian
+variance on a 600x600 face patch reads 305.2 on the camera original and 3.8 on
+`profile.png`, and `profile-enhanced.png` is 1023x1537 to start with. The site
+needs 2400 real pixels across the visible crop, so none of them can be shipped
+directly.
+
+So `regrade.py` keeps every pixel of the camera frame and borrows only the
+grade, as a smooth per-channel gain map: the ratio of the two images' content
+blurred at sigma 32. That carries tone, white balance and saturation without
+carrying any detail. It is a gain map rather than a per-pixel merge because the
+enhanced file is warped against the camera frame, with matching offsets
+drifting from dy=-8 at the face to dy=+2 at the floor. No single alignment
+fixes that, and a per-pixel merge would ghost. Blurred at sigma 32, an eight
+pixel shift does not matter.
+
+Result: face-patch detail 241.6 against the camera's 305.2, and mean saturation
+30.7 against the enhanced file's 30.5.
+
+Four widths, picked by the browser from the `srcset` on the `<img>`. The crop
+uses 60% of the width, so a 2400w file puts 1440 real pixels behind a ~440px
+panel. A 1x laptop downloads 145 KB, a 2x laptop 217 KB, a 3x phone 380 KB, and
+the full 4000x6000 frame (791 KB) is there for anything beyond that.
+
+Do not export from `profile.png` or `profile-enhanced.png` directly. They look
+like masters and are not.
+
+`sizes` on that `<img>` is the element's layout width, which is 166.67% of its
+panel because the panel is what crops it. If the hero grid ratio or gap change,
+`sizes` has to change with them.
 
 ## Conventions worth knowing before changing things
 

@@ -325,25 +325,30 @@ body::after {
   animation: none;
   z-index: 0;
 }
-
 /*
- * 300ms and ease-out, measured rather than guessed.
+ * Duration is the one knob worth tuning here, so it sits in a variable.
  *
- * The old curve was cubic-bezier(0.22, 1, 0.36, 1) over 400ms. Sampled, it
- * reaches 83% of the radius in the first 120ms and spends the remaining 280ms
- * covering the last 17%. That last 17% of radius is the outer ring, which is
- * most of the screen by area, so the visible edge crawled across the widest
- * part of the page. It read as lag even though frames were not being dropped.
+ * The curve matters more than the number and should stay ease-out. The wipe
+ * previously ran cubic-bezier(0.22, 1, 0.36, 1): sampled, it reaches 83% of
+ * the radius in the first 30% of its time and spends the rest covering the
+ * last 17%. That 17% is the outer ring, which is most of the screen by area,
+ * so the edge crawled across the widest part of the page and read as lag with
+ * no frames being dropped. Plain ease-out spreads the motion evenly, which is
+ * why NN/g name it the default.
  *
- * Plain ease-out reaches 90% at 222ms of 300 and leaves 78ms of settle. NN/g
- * name ease-out as the default for exactly this reason: responsive to start,
- * with time for the eye to settle at the end. 300ms also sits inside their
- * 200-300ms band for substantial screen changes, and a quarter fewer frames
- * means a quarter less main-thread work, since Chromium does not run
- * clip-path animations on the compositor.
+ * 450ms is a deliberately unhurried setting. NN/g put 200-300ms on substantial
+ * screen changes and measure animations starting to feel like a drag past
+ * 500ms, so treat 500 as the ceiling rather than a target. Cost scales with
+ * frame count, since Chromium does not run clip-path animations on the
+ * compositor, but the per-flip floor is the View Transitions API itself
+ * (62.5ms measured), so the difference is small.
  */
+:root {
+  --theme-wipe-duration: 450ms;
+}
+
 [data-theme-wipe]::view-transition-new(root) {
-  animation: theme-wipe 300ms ease-out;
+   animation: theme-wipe var(--theme-wipe-duration) ease-out;
   /* The default cross-fade blends the two snapshots; the wipe needs the new
      one opaque so the circle has a hard edge. */
   mix-blend-mode: normal;

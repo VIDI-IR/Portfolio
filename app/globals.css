@@ -155,6 +155,93 @@ body::after {
 }
 
 /*
+ * Copy-to-clipboard confirmation. Icon and label cross-fade in 100ms, NN/g's
+ * figure for simple feedback animations such as a checkbox flipping. Driven
+ * off a data attribute so the component holds one boolean and no class logic.
+ *
+ * Opacity and transform only, both cheap, and the elements are stacked rather
+ * than swapped so nothing reflows mid-interaction.
+ */
+.copy-icon-idle,
+.copy-icon-done,
+.copy-label-idle,
+.copy-label-done {
+  transition:
+    opacity 100ms ease-out,
+    transform 100ms ease-out;
+}
+
+.copy-icon-done,
+.copy-label-done {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.copy-email[data-copied] .copy-icon-idle,
+.copy-email[data-copied] .copy-label-idle {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.copy-email[data-copied] .copy-icon-done,
+.copy-email[data-copied] .copy-label-done {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy-icon-idle,
+  .copy-icon-done,
+  .copy-label-idle,
+  .copy-label-done {
+    transition-property: opacity;
+    transform: none;
+  }
+}
+
+/*
+ * Theme wipe. The incoming theme is revealed through a circle growing out of
+ * the toggle; the outgoing one holds still underneath rather than cross-fading,
+ * which is what makes it read as one surface being uncovered.
+ *
+ * --wipe-x/y/r are written onto <html> by the toggle at click time, and the
+ * whole block is scoped to [data-theme-wipe], which only exists for the
+ * duration of that transition. Browsers without the API never match any of it
+ * and the theme simply flips.
+ */
+@keyframes theme-wipe {
+  from {
+    clip-path: circle(0 at var(--wipe-x) var(--wipe-y));
+  }
+  to {
+    clip-path: circle(var(--wipe-r) at var(--wipe-x) var(--wipe-y));
+  }
+}
+
+[data-theme-wipe]::view-transition-old(root) {
+  animation: none;
+  z-index: 0;
+}
+
+[data-theme-wipe]::view-transition-new(root) {
+  animation: theme-wipe 400ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* The default cross-fade blends the two snapshots; the wipe needs the new
+     one opaque so the circle has a hard edge. */
+  mix-blend-mode: normal;
+  z-index: 1;
+}
+
+/* The toggle already skips startViewTransition under reduced motion. This is
+   the backstop for any transition that starts before that check can run. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/*
  * Hero entrance: one gesture (fade + rise), staggered down the page.
  * Transform/opacity only so it stays off the layout path.
  */
@@ -284,6 +371,24 @@ body::after {
   }
 }
 
+/*
+ * The warm glow travels and opens out as you scroll.
+ *
+ * Without this it is pinned behind the hero and the lower two thirds of the
+ * page sit on flat ground. Bound to document scroll rather than a clock, so
+ * it never moves on its own: no involuntary attention capture while someone
+ * is reading, and no WCAG 2.2.2 pause control owed, since nothing starts
+ * automatically.
+ *
+ * Transform only. Animating the gradient itself, or its background-position,
+ * would repaint a full-viewport layer every frame.
+ */
+@keyframes glow-travel {
+  to {
+    transform: translate3d(-10vw, 30vh, 0) scale(1.3);
+  }
+}
+
 /* Hero recedes as it leaves — Apple's "previous panel falls back" move. */
 @keyframes recede {
   to {
@@ -311,6 +416,12 @@ body::after {
       animation-timeline: view();
       animation-range: exit 0% exit 85%;
       transform-origin: center 30%;
+    }
+
+    body::before {
+      animation: glow-travel linear both;
+      animation-timeline: scroll(root block);
+      will-change: transform;
     }
 
     /* Reading-progress rule, driven by document scroll. */

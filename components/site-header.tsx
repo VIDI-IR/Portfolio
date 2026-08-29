@@ -2,9 +2,12 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { focusRingWide, focusRingFlush } from "@/app/ui";
 
+/* Order mirrors the page. A nav that disagrees with reading order makes the
+   page feel unordered. Education is omitted: it is the section directly under
+   the hero, and it is the one a technical reader needs least. */
 const SECTIONS = [
-  { href: "#work", label: "Work" },
   { href: "#experience", label: "Experience" },
+  { href: "#work", label: "Work" },
   { href: "#skills", label: "Skills" },
   { href: "#contact", label: "Contact" },
 ];

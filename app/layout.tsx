@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SITE_URL } from "./site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,10 +13,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const TITLE = "Vidi Ilham Ramadhan | Full-Stack & AI Agent Developer";
+const DESCRIPTION =
+  "Full-stack and AI agent developer at Kalbe International, Jakarta. Sole developer of a production AI agent backend on Google ADK, FastAPI and MCP tool calling.";
+
 export const metadata: Metadata = {
-  title: "Vidi Ilham Ramadhan — Full-Stack & AI Agent Developer",
-  description:
-    "Full-stack and AI agent developer at Kalbe International, Jakarta. Sole developer of a production AI agent backend on Google ADK, FastAPI and MCP tool calling.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  // og:image, its dimensions and alt text are added automatically from
+  // app/opengraph-image.jpg and opengraph-image.alt.txt.
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: "Vidi Ilham Ramadhan",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    // Without this the card renders as a small thumbnail beside the text
+    // rather than the full-width image.
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem("theme");var t=s==="light"||s==="dark"?s:(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;

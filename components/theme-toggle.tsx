@@ -28,11 +28,61 @@ export function ThemeToggle() {
     document.documentElement.setAttribute("data-theme", readStoredTheme());
   }, []);
 
-  function toggle() {
-    const current = document.documentElement.getAttribute("data-theme");
-    const next: Theme = current === "dark" ? "light" : "dark";
-    document.documentElement.setAttribute("data-theme", next);
-    window.localStorage.setItem("theme", next);
+  /*
+   * The theme flip itself is two lines. The rest is a circular wipe that grows
+   * from the button, drawn by the View Transitions API.
+   *
+   * It earns its place because it is *communicative*, which is the line NN/g
+   * draws between animation that helps and animation that annoys: the new
+   * theme visibly spreads out of the control that caused it, so the cause and
+   * the effect are tied together. It also runs only on a deliberate click, so
+   * nobody meets it by scrolling past.
+   *
+   * 400ms is the top of NN/g's 100-400ms band, reserved for "big movements
+   * across large screens", which a full-viewport wipe is. Past 500ms they
+   * measure animations starting to feel like a drag.
+   *
+   * Two exits back to an instant flip: reduced-motion, and any browser without
+   * the API. Same-document view transitions only reached Baseline in Oct 2025.
+   */
+  function toggle(event: React.MouseEvent<HTMLButtonElement>) {
+    const root = document.documentElement;
+    const next: Theme =
+      root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+
+    const apply = () => {
+      root.setAttribute("data-theme", next);
+      window.localStorage.setItem("theme", next);
+    };
+
+    if (
+      typeof document.startViewTransition !== "function" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      apply();
+      return;
+    }
+
+    // Origin is the button's centre; the radius is the distance to the
+    // furthest corner, so the circle always finishes by covering the viewport.
+    const box = event.currentTarget.getBoundingClientRect();
+    const x = box.left + box.width / 2;
+    const y = box.top + box.height / 2;
+    const radius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
+
+    root.style.setProperty("--wipe-x", `${x}px`);
+    root.style.setProperty("--wipe-y", `${y}px`);
+    root.style.setProperty("--wipe-r", `${radius}px`);
+    // Scopes the CSS below to this transition rather than every view
+    // transition the page might ever run.
+    root.dataset.themeWipe = "";
+
+    document.startViewTransition(apply).finished.finally(() => {
+      delete root.dataset.themeWipe;
+    });
   }
 
   return (

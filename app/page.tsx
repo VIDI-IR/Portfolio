@@ -1,22 +1,7 @@
 import Image from "next/image";
 import { SiteHeader } from "@/components/site-header";
+import { CopyEmail } from "@/components/copy-email";
 import { focusRing, focusRingFlush } from "@/app/ui";
-
-const BIRTH_DATE = "2004-10-25";
-
-/* Inlined rather than a lib/ module: one caller, and keeping it here means the
-   birth date and the maths that reads it stay side by side. */
-function getAge(birthDate: string): number {
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const hadBirthdayThisYear =
-    now.getMonth() > birth.getMonth() ||
-    (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
-
-  return (
-    now.getFullYear() - birth.getFullYear() - (hadBirthdayThisYear ? 0 : 1)
-  );
-}
 
 /*
  * Portrait crop, expressed directly in source pixels of the original 4000x6000
@@ -59,15 +44,29 @@ const EXPERIENCE = [
   },
 ];
 
+/*
+ * Deliberately four facts and no prose. For a technical role the projects
+ * below carry the weight; a long education block competes with them for the
+ * few seconds a recruiter spends scanning. Awards are omitted for the same
+ * reason. Add `gpa` back into the list below if it should appear.
+ */
 const EDUCATION = {
   degree: "BSc (Hons) Computer Science, Artificial Intelligence",
-  school: "Asia Pacific University of Technology & Innovation (APU)",
-  url: "https://www.apu.edu.my/about-apu",
-  urlLabel: "apu.edu.my",
   period: "Sep 2022 – Oct 2025",
-  note: "Dual degree with De Montfort University (UK)",
-  blurb:
-    "Specialised in Artificial Intelligence, which is the grounding the agent work at Kalbe builds on directly. Studied at APU in Kuala Lumpur, Malaysia, on a dual-degree programme awarded alongside a parallel degree from De Montfort University in the United Kingdom.",
+  schools: [
+    {
+      name: "Asia Pacific University of Technology & Innovation (APU)",
+      note: "Kuala Lumpur, Malaysia",
+      url: "https://www.apu.edu.my/about-apu",
+      urlLabel: "apu.edu.my",
+    },
+    {
+      name: "De Montfort University",
+      note: "Leicester, United Kingdom. Dual award.",
+      url: "https://www.dmu.ac.uk/about-dmu/index.aspx",
+      urlLabel: "dmu.ac.uk",
+    },
+  ],
 };
 
 /* url is optional: the Kalbe systems are internal and have nothing public to
@@ -152,13 +151,13 @@ const PROJECTS: Project[] = [
     org: "Personal",
     year: "2026",
     summary:
-      "Designed and built from scratch — no template, no component library.",
+      "Designed and built from scratch, with no template or component library.",
     url: "https://github.com/VIDI-IR/Portfolio",
     urlLabel: "Source on GitHub",
     points: [
       "Designed it as well as built it: the layout, colour system, typography and motion are all mine rather than a theme I filled in.",
       "Kept it fast. The whole page is 226 KB and served as static files, with the animation written in plain CSS so there is no library to download and scrolling stays smooth.",
-      "Built to work for everyone, not just on my machine — keyboard navigation, screen readers and reduced-motion settings are all supported, and every colour combination was checked for readable contrast rather than assumed.",
+      "Built to work for everyone. Keyboard navigation, screen readers and reduced-motion settings are all supported, and every colour pairing was measured against WCAG contrast thresholds rather than assumed.",
       "Degrades gracefully. On older browsers the effects switch off and the content is still complete and readable, instead of breaking.",
     ],
     stack: ["Next.js", "React", "TypeScript", "Tailwind CSS", "Accessibility"],
@@ -230,6 +229,17 @@ const heading = "mt-3 text-3xl font-semibold tracking-tight";
 const chip =
   "rounded-full border border-border px-3 py-1 font-mono text-xs text-muted";
 
+/* One container for every section, so headings and rules share a left and
+   right edge down the whole page. It matches the hero's max-w-5xl, which is
+   the widest thing on the page and therefore sets the column. */
+const section = "mx-auto w-full max-w-5xl px-6 py-24";
+
+/* The container is wider than body copy should be. 70ch lands inside the
+   45-75 character measure that reading research treats as comfortable; at the
+   full 5xl width a line would run past 110. Applied to running prose only,
+   never to headings, chips or metadata. */
+const measure = "max-w-[70ch] text-pretty text-base leading-relaxed text-muted";
+
 const extLink = `inline-flex items-center gap-1 rounded-sm underline decoration-border underline-offset-4 transition-colors hover:text-accent hover:decoration-accent ${focusRing}`;
 
 /* Arrow marks the link as leaving the site; the sr-only text says so out loud,
@@ -269,8 +279,6 @@ function ExternalLink({
 }
 
 export default function Home() {
-  const age = getAge(BIRTH_DATE);
-
   return (
     <>
       <SiteHeader />
@@ -345,9 +353,9 @@ export default function Home() {
                 className="rise mt-8 max-w-lg text-pretty text-base leading-relaxed text-muted"
                 style={{ animationDelay: "300ms" }}
               >
-                I&apos;m a {age}-year-old full-stack and AI agent developer at
-                Kalbe International, part of the Kalbe Farma group. I&apos;m the
-                sole developer of a production AI agent backend built on
+                I&apos;m a full-stack and AI agent developer at Kalbe
+                International, part of the Kalbe Farma group. I&apos;m the sole
+                developer of a production AI agent backend built on
                 Google&apos;s Agent Development Kit, FastAPI and MCP tool
                 calling, and I build enterprise systems with bulk data upload,
                 row-level validation against master data, and automated GL and
@@ -356,7 +364,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Scroll affordance — there is content below the fold now. */}
+          {/* Scroll affordance. There is content below the fold now. */}
           <a
             href="#experience"
             className={`rise absolute bottom-8 rounded-sm px-3 py-2 text-xs uppercase tracking-[0.18em] text-muted transition-colors hover:text-accent ${focusRingFlush}`}
@@ -370,7 +378,7 @@ export default function Home() {
         <section
           id="experience"
           aria-labelledby="experience-heading"
-          className="mx-auto w-full max-w-4xl px-6 py-24"
+          className={section}
         >
           <p className={`reveal ${eyebrow}`}>Experience</p>
           <h2 id="experience-heading" className={`reveal ${heading}`}>
@@ -400,9 +408,7 @@ export default function Home() {
                           {r.period}
                         </span>
                       </div>
-                      <p className="mt-2 text-pretty text-base leading-relaxed text-muted">
-                        {r.blurb}
-                      </p>
+                      <p className={`mt-2 ${measure}`}>{r.blurb}</p>
                     </li>
                   ))}
                 </ol>
@@ -411,43 +417,11 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ----------------------------------------------------- Education */}
-        <section
-          id="education"
-          aria-labelledby="education-heading"
-          className="mx-auto w-full max-w-4xl px-6 py-24"
-        >
-          <p className={`reveal ${eyebrow}`}>Education</p>
-          <h2 id="education-heading" className={`reveal ${heading}`}>
-            What I studied
-          </h2>
-
-          <div className="reveal mt-10">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-              <h3 className="text-xl font-semibold tracking-tight">
-                {EDUCATION.degree}
-              </h3>
-              <span className="font-mono text-xs text-muted">
-                {EDUCATION.period}
-              </span>
-            </div>
-            <p className="mt-2 text-base text-muted">
-              <ExternalLink href={EDUCATION.url} label={EDUCATION.urlLabel}>
-                {EDUCATION.school}
-              </ExternalLink>
-            </p>
-            <p className="mt-1 text-base text-muted">{EDUCATION.note}</p>
-            <p className="mt-4 max-w-2xl text-pretty text-base leading-relaxed text-muted">
-              {EDUCATION.blurb}
-            </p>
-          </div>
-        </section>
-
         {/* ------------------------------------------------------ Projects */}
         <section
           id="work"
           aria-labelledby="work-heading"
-          className="mx-auto w-full max-w-5xl px-6 py-24"
+          className={section}
         >
           <div className="reveal">
             <p className={eyebrow}>Projects</p>
@@ -455,8 +429,8 @@ export default function Home() {
               Things I&apos;ve built
             </h2>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-muted">
-              Production systems at Kalbe International, from AI agent backends
-              to enterprise financial tooling.
+              Systems shipped at Kalbe International, from AI agent backends to
+              enterprise financial tooling. Open any row for the detail.
             </p>
           </div>
 
@@ -473,36 +447,54 @@ export default function Home() {
             {PROJECTS.map((p, i) => (
               <li key={p.name} className="reveal border-b border-border">
                 <details className="disclosure group">
-                  <summary className="flex cursor-pointer list-none items-start gap-4 py-6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background [&::-webkit-details-marker]:hidden">
+                  {/* The wash tells you the whole row is the target, not just
+                      the control at its end. Negative margin lets it bleed
+                      past the text without moving any of it. */}
+                  <summary className="-mx-3 flex cursor-pointer list-none items-start gap-4 rounded-lg px-3 py-6 transition-colors hover:bg-accent/6 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-background group-open:bg-accent/6 [&::-webkit-details-marker]:hidden">
                     <span className="mt-1 font-mono text-xs text-muted tabular-nums">
                       {String(i + 1).padStart(2, "0")}
                     </span>
 
                     <span className="flex-1">
-                      <span className="block text-xl font-semibold tracking-tight transition-colors group-hover:text-accent">
+                      {/* A heading, not a styled span: screen reader users
+                          navigate by heading, and five projects with none
+                          meant your work was unreachable that way. */}
+                      <h3 className="text-xl font-semibold tracking-tight transition-colors group-hover:text-accent">
                         {p.name}
-                      </span>
+                      </h3>
                       <span className="mt-1 block text-pretty text-base leading-relaxed text-muted">
                         {p.summary}
                       </span>
                     </span>
 
-                    <span className="mt-1 shrink-0 font-mono text-xs text-muted tabular-nums">
+                    <span className="mt-1.5 hidden shrink-0 font-mono text-xs text-muted tabular-nums sm:block">
                       {p.year}
                     </span>
 
-                    {/* Rotates 45° to read as a close affordance when open. */}
-                    <svg
+                    {/*
+                      A bare icon read as decoration and was missed. This is a
+                      bordered, tinted, labelled control instead: an explicit
+                      verb plus an icon that rotates 45° into a close mark.
+                      aria-hidden because <summary> already announces its own
+                      expanded/collapsed state, so the label would double up.
+                    */}
+                    <span
                       aria-hidden
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      className="mt-1 h-4 w-4 shrink-0 text-muted transition-transform duration-200 group-open:rotate-45"
+                      className="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-full border border-accent/45 bg-accent/10 px-3 py-1.5 font-mono text-xs font-medium text-accent transition-colors group-hover:border-accent group-hover:bg-accent/20"
                     >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        className="h-3.5 w-3.5 transition-transform duration-200 group-open:rotate-45"
+                      >
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      <span className="group-open:hidden">Details</span>
+                      <span className="hidden group-open:inline">Close</span>
+                    </span>
                   </summary>
 
                   <div className="pb-8 sm:pl-10">
@@ -512,10 +504,7 @@ export default function Home() {
 
                     <ul className="mt-4 space-y-3">
                       {p.points.map((pt) => (
-                        <li
-                          key={pt.slice(0, 40)}
-                          className="text-pretty text-base leading-relaxed text-muted"
-                        >
+                        <li key={pt.slice(0, 40)} className={measure}>
                           {pt}
                         </li>
                       ))}
@@ -549,11 +538,16 @@ export default function Home() {
           </ol>
         </section>
 
-        {/* -------------------------------------------------------- Skills */}
+        {/*
+          ---------------------------------------------------------- Skills
+
+          Sits after Projects, so it reads as the index to the work above
+          rather than a list of claims made before any evidence.
+        */}
         <section
           id="skills"
           aria-labelledby="skills-heading"
-          className="mx-auto w-full max-w-5xl px-6 py-24"
+          className={section}
         >
           <p className={`reveal ${eyebrow}`}>Skills</p>
           <h2 id="skills-heading" className={`reveal ${heading}`}>
@@ -578,39 +572,90 @@ export default function Home() {
           </dl>
         </section>
 
+        {/*
+          ------------------------------------------------------- Education
+
+          Last of the credential sections and deliberately short. For a
+          technical role the work above carries the decision, so this answers
+          the qualification question without competing for attention.
+        */}
+        <section
+          id="education"
+          aria-labelledby="education-heading"
+          className={section}
+        >
+          <p className={`reveal ${eyebrow}`}>Education</p>
+          <h2 id="education-heading" className={`reveal ${heading}`}>
+            What I studied
+          </h2>
+
+          <div className="reveal mt-10">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+              <h3 className="text-xl font-semibold tracking-tight">
+                {EDUCATION.degree}
+              </h3>
+              <span className="font-mono text-xs text-muted">
+                {EDUCATION.period}
+              </span>
+            </div>
+
+            <ul className="mt-4 space-y-1.5">
+              {EDUCATION.schools.map((s) => (
+                <li key={s.name} className="text-base text-muted">
+                  <ExternalLink href={s.url} label={s.urlLabel}>
+                    {s.name}
+                  </ExternalLink>{" "}
+                  <span className="text-sm">{s.note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {/* ------------------------------------------------------- Contact */}
         <section
           id="contact"
           aria-labelledby="contact-heading"
-          className="mx-auto w-full max-w-2xl px-6 py-32 text-center"
+          className={section}
         >
-          <p className={`reveal ${eyebrow}`}>Contact</p>
-          <h2
-            id="contact-heading"
-            className="reveal mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
-          >
-            Let&apos;s build something
-          </h2>
-          <p className="reveal mt-5 text-pretty text-base leading-relaxed text-muted">
-            Open to onsite, hybrid and fully remote roles. Based in Jakarta
-            (Jabodetabek).
-          </p>
+          {/* The section keeps the page's shared container so its edges line up
+              with everything above; this inner column is what keeps the centred
+              block from stretching across the full width. */}
+          <div className="mx-auto max-w-2xl text-center">
+            <p className={`reveal ${eyebrow}`}>Contact</p>
+            <h2
+              id="contact-heading"
+              className="reveal mt-3 text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+            >
+              Let&apos;s build something
+            </h2>
+            <p className="reveal mt-5 text-pretty text-base leading-relaxed text-muted">
+              Open to onsite, hybrid and fully remote roles. Based in Jakarta
+              (Jabodetabek).
+            </p>
 
-          <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="mailto:vidiilhamramadhan@gmail.com"
-              className={`rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90 ${focusRing}`}
-            >
-              Email me
-            </a>
-            <a
-              href="https://linkedin.com/in/vidi-ilham-ramadhan"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`rounded-full border border-border px-6 py-3 text-sm font-medium transition-colors hover:border-accent hover:text-accent ${focusRing}`}
-            >
-              LinkedIn
-            </a>
+            <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-3">
+              <a
+                href="mailto:vidiilhamramadhan@gmail.com"
+                className={`flex h-11 items-center rounded-full bg-foreground px-6 text-sm font-medium text-background transition-opacity hover:opacity-90 ${focusRing}`}
+              >
+                Email me
+              </a>
+              <a
+                href="https://linkedin.com/in/vidi-ilham-ramadhan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex h-11 items-center rounded-full border border-border px-6 text-sm font-medium transition-colors hover:border-accent hover:text-accent ${focusRing}`}
+              >
+                LinkedIn
+              </a>
+            </div>
+
+            {/* Second row so the address does not compete with the two primary
+                actions above it. */}
+            <div className="reveal mt-4 flex justify-center">
+              <CopyEmail />
+            </div>
           </div>
         </section>
       </main>
